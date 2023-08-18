@@ -1,32 +1,51 @@
 #!/bin/bash
 
-#set -x
-echo 
+set -x
+
+#LOG_FILE="script.log"
+
+#log() {
+ #   local timestamp=$(date +"%Y-%m-%d %T")
+ #   echo "[$timestamp] $1" >>"$LOG_FILE"
+#}
+
+#log "Script started"
+# Your script commands here
+
+DATE=$(date +%F)
+SCRIPT_FILE_NAME="bbtestmigration"
+LOGFILE==/c/Users/Lenovo/Desktop/testbit/bbmigtation/$SCRIPT_FILE_NAME-$DATE.log
+
+RED="\e[31m"
+GREEN="\e[32m"
+
+#echo -e "${RED} "
+echo
 echo "********** Provided variales ********************************"
 echo
 
 # provoding git credentials
 GIT_USERNAME='satishkollati'
-GIT_PASSWORD='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'
+GIT_PASSWORD='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'
 bbname='satishkollati'
 WORKSPACE='codepipeline9'
+bitbucket_pass='ATBBk5MJVVd7eTPajnKFCC3zW5Vg3B3BCDE6'
+projectkey='BB2GHMIG'
 
 echo
 echo "************ getting Bitbucket Repos Reports******************"
 echo
 
-curl -u satishkollati:ATBBk5MJVVd7eTPajnKFCC3zW5Vg3B3BCDE6 --request GET --url "https://api.bitbucket.org/2.0/repositories/codepipeline9?q=project.key%3D%22AW%22" | jq -r '.values[] | .name' >repos.txt
+curl -u $bbname:$bitbucket_pass --request GET --url "https://api.bitbucket.org/2.0/repositories/$WORKSPACE?q=project.key%3D%22$projectkey%22" | jq -r '.values[] | .name' >repos.txt
 dos2unix repos.txt
-repos=$(cat repos.txt)
 
 cat repos.txt | while read REPO; do
     echo "$REPO" fetching
-    git clone https://satishkollati@bitbucket.org/codepipeline9/$REPO
+    # git clone --mirror https://$bbname@bitbucket.org/$WORKSPACE/$REPO.git
+    git clone git@bitbucket.org:codepipeline9/$REPO.git 
     cd $REPO
     if [ $? -ne 0 ]; then
-
         echo " changed to $REPO "
-
         exit 1
     fi
 
@@ -42,7 +61,7 @@ cat repos.txt | while read REPO; do
     echo "*********** Mirroring $REPO to github ****************************"
     echo
 
-    git push --mirror git@github.com:$GIT_USERNAME/$REPO.git
+    git push --mirror git@github.com:$GIT_USERNAME/$REPO.git &>>$LOGFILE
 
     cd ..
 
@@ -50,8 +69,9 @@ cat repos.txt | while read REPO; do
     echo "*********** Removing $REPO in local *****************************"
     echo
 
-    rm -rf $REPO
-
-    echo "$REPO Repository Migration is completed successfully!"
+    rm -rf $REPO &>>$LOGFILE
+    echo -e "${GREEN} $REPO Repository Migration is completed successfully!"
 
 done
+
+#log "Script finished"
